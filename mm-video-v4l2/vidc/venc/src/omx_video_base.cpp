@@ -1979,6 +1979,7 @@ OMX_ERRORTYPE  omx_video::get_parameter(OMX_IN OMX_HANDLETYPE     hComp,
                 }
                 break;
             }
+#ifdef USE_VQZIP
         case OMX_QTIIndexParamVQZIPSEIType:
             {
                 OMX_U32 enabled;
@@ -1993,6 +1994,7 @@ OMX_ERRORTYPE  omx_video::get_parameter(OMX_IN OMX_HANDLETYPE     hComp,
                 }
                 break;
             }
+#endif
         case OMX_QcomIndexParamPeakBitrate:
             {
                 OMX_U32 peakbitrate;

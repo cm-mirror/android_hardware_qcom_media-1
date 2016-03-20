@@ -1257,6 +1257,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE     hComp,
                         eRet = OMX_ErrorUnsupportedIndex;
                         break;
                     }
+#ifdef USE_VQZIP
                 } else if (pParam->nIndex == (OMX_INDEXTYPE)OMX_QTIIndexParamVQZipSEIExtraData) {
                     if (pParam->nPortIndex == PORT_INDEX_IN) {
                         mask = VENC_EXTRADATA_VQZIP;
@@ -1269,6 +1270,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE     hComp,
                         break;
                     }
                 }
+#endif
 
 #ifndef _MSM8974_
                 else if (pParam->nIndex == (OMX_INDEXTYPE)OMX_ExtraDataVideoLTRInfo) {
@@ -1286,7 +1288,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE     hComp,
                     }
                 }
 #endif
-                else {
+                } else {
                     DEBUG_PRINT_ERROR("set_parameter: unsupported extrdata index (%x)",
                             pParam->nIndex);
                     eRet = OMX_ErrorUnsupportedIndex;
@@ -1538,6 +1540,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE     hComp,
                 }
                break;
             }
+#ifdef USE_VQZIP
         case OMX_QTIIndexParamVQZIPSEIType:
             {
                 if (!handle->venc_set_param(paramData,
@@ -1548,6 +1551,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE     hComp,
                 m_sExtraData |= VENC_EXTRADATA_VQZIP;
                 break;
             }
+#endif
         case OMX_QcomIndexParamVencAspectRatio:
             {
                 if (!handle->venc_set_param(paramData,
@@ -2156,10 +2160,12 @@ bool omx_venc::dev_get_vui_timing_info(OMX_U32 *enabled)
 #endif
 }
 
+#ifdef USE_VQZIP
 bool omx_venc::dev_get_vqzip_sei_info(OMX_U32 *enabled)
 {
     return handle->venc_get_vqzip_sei_info(enabled);
 }
+#endif
 
 bool omx_venc::dev_get_peak_bitrate(OMX_U32 *peakbitrate)
 {

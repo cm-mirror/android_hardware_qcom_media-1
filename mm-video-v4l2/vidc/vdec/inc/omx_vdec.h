@@ -193,7 +193,9 @@ class VideoHeap : public MemoryHeapBase
 #define OMX_FRAMEPACK_EXTRADATA 0x00400000
 #define OMX_QP_EXTRADATA        0x00800000
 #define OMX_BITSINFO_EXTRADATA  0x01000000
+#ifdef USE_VQZIP
 #define OMX_VQZIPSEI_EXTRADATA  0x02000000
+#endif
 
 #define OMX_INTERLACE_EXTRADATA_SIZE ((sizeof(OMX_OTHER_EXTRADATATYPE) +\
             sizeof(OMX_STREAMINTERLACEFORMAT) + 3)&(~3))
@@ -209,8 +211,10 @@ class VideoHeap : public MemoryHeapBase
             sizeof(OMX_QCOM_EXTRADATA_QP) + 3)&(~3))
 #define OMX_BITSINFO_EXTRADATA_SIZE ((sizeof(OMX_OTHER_EXTRADATATYPE) +\
             sizeof(OMX_QCOM_EXTRADATA_BITS_INFO) + 3)&(~3))
+#ifdef USE_VQZIP
 #define OMX_VQZIPSEI_EXTRADATA_SIZE ((sizeof(OMX_OTHER_EXTRADATATYPE) +\
             sizeof(OMX_QCOM_EXTRADATA_VQZIPSEI) + 3)&(~3))
+#endif
 #define OMX_USERDATA_EXTRADATA_SIZE ((sizeof(OMX_OTHER_EXTRADATATYPE) +\
             + 3)&(~3))
 
@@ -698,8 +702,10 @@ class omx_vdec: public qc_omx_component
                 struct msm_vidc_frame_qp_payload *qp_payload);
         void append_bitsinfo_extradata(OMX_OTHER_EXTRADATATYPE *extra,
                 struct msm_vidc_frame_bits_info_payload *bits_payload);
+#ifdef USE_VQZIP
         void append_vqzip_extradata(OMX_OTHER_EXTRADATATYPE *extra,
                 struct msm_vidc_vqzip_sei_payload *vqzip_payload);
+#endif
         void insert_demux_addr_offset(OMX_U32 address_offset);
         void extract_demux_addr_offsets(OMX_BUFFERHEADERTYPE *buf_hdr);
         OMX_ERRORTYPE handle_demux_data(OMX_BUFFERHEADERTYPE *buf_hdr);

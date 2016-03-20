@@ -146,7 +146,9 @@ enum omx_venc_extradata_types {
     VENC_EXTRADATA_MBINFO = 0x400,
     VENC_EXTRADATA_FRAMEDIMENSION = 0x1000000,
     VENC_EXTRADATA_YUV_STATS = 0x800,
+#ifdef USE_VQZIP
     VENC_EXTRADATA_VQZIP = 0x02000000,
+#endif
 };
 
 // OMX video class
@@ -241,7 +243,9 @@ class omx_video: public qc_omx_component
         virtual bool dev_get_capability_ltrcount(OMX_U32 *, OMX_U32 *, OMX_U32 *) = 0;
         virtual bool dev_get_performance_level(OMX_U32 *) = 0;
         virtual bool dev_get_vui_timing_info(OMX_U32 *) = 0;
+#ifdef USE_VQZIP
         virtual bool dev_get_vqzip_sei_info(OMX_U32 *) = 0;
+#endif
         virtual bool dev_get_peak_bitrate(OMX_U32 *) = 0;
         virtual bool dev_get_batch_size(OMX_U32 *) = 0;
 #ifdef _ANDROID_ICS_

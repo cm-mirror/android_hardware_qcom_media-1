@@ -260,7 +260,9 @@ venc_dev::venc_dev(class omx_venc *venc_class):mInputExtradata(venc_class), mOut
     is_searchrange_set = false;
     enable_mv_narrow_searchrange = false;
     supported_rc_modes = RC_ALL;
+#ifdef USE_VQZIP
     memset(&vqzip_sei_info, 0, sizeof(vqzip_sei_info));
+#endif
     memset(&ltrinfo, 0, sizeof(ltrinfo));
     memset(&fd_list, 0, sizeof(fd_list));
     memset(&hybrid_hp, 0, sizeof(hybrid_hp));
@@ -617,7 +619,9 @@ bool venc_dev::handle_input_extradata(void *buffer, int fd)
     }
 
     if (!(control.value == V4L2_MPEG_VIDC_EXTRADATA_YUV_STATS ||
+#ifdef USE_VQZIP
         control.value == V4L2_MPEG_VIDC_EXTRADATA_VQZIP_SEI ||
+#endif
         control.value == V4L2_MPEG_VIDC_EXTRADATA_FRAME_QP ||
         control.value == V4L2_MPEG_VIDC_EXTRADATA_INPUT_CROP)) {
         DEBUG_PRINT_LOW("Input extradata not enabled");
@@ -689,10 +693,12 @@ bool venc_dev::handle_input_extradata(void *buffer, int fd)
                 data = (OMX_OTHER_EXTRADATATYPE *)((char *)data + data->nSize);
                 break;
             }
+#ifdef USE_VQZIP
             case OMX_ExtraDataVQZipSEI:
                 DEBUG_PRINT_LOW("VQZIP SEI Found ");
                 mInputExtradata.vqzip_sei_found = true;
                 break;
+#endif
             default:
                 break;
             }
@@ -700,6 +706,7 @@ bool venc_dev::handle_input_extradata(void *buffer, int fd)
             p_extra = (OMX_OTHER_EXTRADATATYPE *)((char *)p_extra + p_extra->nSize);
         }
 
+#ifdef USE_VQZIP
         if (control.value == V4L2_MPEG_VIDC_EXTRADATA_YUV_STATS ||
             control.value == V4L2_MPEG_VIDC_EXTRADATA_VQZIP_SEI) {
             if (!mInputExtradata.vqzip_sei_found) {
@@ -716,6 +723,7 @@ bool venc_dev::handle_input_extradata(void *buffer, int fd)
             vqzip.fill_stats_data((void*)pVirt, (void*) data->data);
             data = (OMX_OTHER_EXTRADATATYPE *)((char *)data + data->nSize);
         }
+#endif
 
         data->nSize = sizeof(OMX_OTHER_EXTRADATATYPE);
         data->nVersion.nVersion = OMX_SPEC_VERSION;
@@ -2171,6 +2179,7 @@ bool venc_dev::venc_set_param(void *paramData, OMX_INDEXTYPE index)
                 }
                 break;
             }
+#ifdef USE_VQZIP
         case OMX_QTIIndexParamVQZIPSEIType:
             {
                 OMX_QTI_VIDEO_PARAM_VQZIP_SEI_TYPE*pParam =
@@ -2182,6 +2191,7 @@ bool venc_dev::venc_set_param(void *paramData, OMX_INDEXTYPE index)
                 }
                 break;
             }
+#endif
         case OMX_QcomIndexParamPeakBitrate:
             {
                 OMX_QCOM_VIDEO_PARAM_PEAK_BITRATE *pParam =
@@ -2687,6 +2697,7 @@ unsigned venc_dev::venc_set_message_thread_id(pthread_t tid)
     return 0;
 }
 
+#ifdef USE_VQZIP
 bool venc_dev::venc_set_vqzip_defaults()
 {
     struct v4l2_control control;
@@ -2741,7 +2752,7 @@ bool venc_dev::venc_set_vqzip_defaults()
 
     return true;
 }
-
+#endif
 
 unsigned venc_dev::venc_start(void)
 {
@@ -2763,8 +2774,10 @@ unsigned venc_dev::venc_start(void)
                 __func__, codec_profile.profile, profile_level.level);
     }
 
+#ifdef USE_VQZIP
     if (vqzip_sei_info.enabled && !venc_set_vqzip_defaults())
         return 1;
+#endif
 
     venc_config_print();
 
@@ -3110,6 +3123,7 @@ bool venc_dev::venc_get_vui_timing_info(OMX_U32 *enabled)
     }
 }
 
+#ifdef USE_VQZIP
 bool venc_dev::venc_get_vqzip_sei_info(OMX_U32 *enabled)
 {
     if (!enabled) {
@@ -3120,6 +3134,7 @@ bool venc_dev::venc_get_vqzip_sei_info(OMX_U32 *enabled)
         return true;
     }
 }
+#endif
 
 bool venc_dev::venc_get_peak_bitrate(OMX_U32 *peakbitrate)
 {
@@ -3650,6 +3665,7 @@ bool venc_dev::venc_set_mbi_statistics_mode(OMX_U32 mode)
     return true;
 }
 
+#ifdef USE_VQZIP
 bool venc_dev::venc_set_vqzip_sei_type(OMX_BOOL enable)
 {
     struct v4l2_control sei_control, yuvstats_control;
@@ -3684,6 +3700,7 @@ bool venc_dev::venc_set_vqzip_sei_type(OMX_BOOL enable)
 
     return true;
 }
+#endif
 
 bool venc_dev::venc_validate_hybridhp_params(OMX_U32 layers, OMX_U32 bFrames, OMX_U32 count, int mode)
 {
@@ -4811,10 +4828,12 @@ bool venc_dev::venc_set_target_bitrate(OMX_U32 nTargetBitrate, OMX_U32 config)
     struct v4l2_control control;
     int rc = 0;
 
+#ifdef USE_VQZIP
     if (vqzip_sei_info.enabled) {
         DEBUG_PRINT_HIGH("For VQZIP 1.0, Bitrate setting is not supported");
         return true;
     }
+#endif
 
     control.id = V4L2_CID_MPEG_VIDEO_BITRATE;
     control.value = nTargetBitrate;
@@ -4854,11 +4873,12 @@ bool venc_dev::venc_set_encode_framerate(OMX_U32 encode_framerate, OMX_U32 confi
     parm.parm.output.timeperframe.numerator = frame_rate_cfg.fps_denominator;
     parm.parm.output.timeperframe.denominator = frame_rate_cfg.fps_numerator;
 
+#ifdef USE_VQZIP
     if (vqzip_sei_info.enabled) {
         DEBUG_PRINT_HIGH("For VQZIP 1.0, Framerate setting is not supported");
         return true;
     }
-
+#endif
 
     if (frame_rate_cfg.fps_numerator > 0)
         rc = ioctl(m_nDriver_fd, VIDIOC_S_PARM, &parm);
@@ -5498,14 +5518,15 @@ bool venc_dev::venc_set_ratectrl_cfg(OMX_VIDEO_CONTROLRATETYPE eControlRate)
 
     if (eControlRate == OMX_Video_ControlRateVariable && (supported_rc_modes & RC_VBR_CFR)
         && m_sVenc_cfg.codectype == V4L2_PIX_FMT_H264) {
+#ifdef USE_VQZIP
         /* Enable VQZIP SEI by default for camcorder RC modes */
-
         control.id = V4L2_CID_MPEG_VIDC_VIDEO_VQZIP_SEI;
         control.value = V4L2_CID_MPEG_VIDC_VIDEO_VQZIP_SEI_ENABLE;
         DEBUG_PRINT_HIGH("Set VQZIP SEI:");
         if (ioctl(m_nDriver_fd, VIDIOC_S_CTRL, &control) < 0) {
             DEBUG_PRINT_HIGH("Non-Fatal: Request to set VQZIP failed");
         }
+#endif
     }
 
     return status;
@@ -6152,10 +6173,12 @@ bool venc_dev::venc_validate_profile_level(OMX_U32 *eProfile, OMX_U32 *eLevel)
     OMX_U32 mb_per_frame, mb_per_sec;
     bool profile_level_found = false;
 
+#ifdef USE_VQZIP
     if (vqzip_sei_info.enabled) {
         DEBUG_PRINT_HIGH("VQZIP is enabled. Profile and Level set by client. Skipping validation");
         return true;
     }
+#endif
 
     DEBUG_PRINT_LOW("Init profile table for respective codec");
 
@@ -6544,6 +6567,7 @@ int venc_dev::BatchInfo::getTimeStampAt(native_handle_t *hnd, int index) {
     return size;
 }
 
+#ifdef USE_VQZIP
 venc_dev::venc_dev_vqzip::venc_dev_vqzip()
 {
     mLibHandle = NULL;
@@ -6625,6 +6649,7 @@ venc_dev::venc_dev_vqzip::~venc_dev_vqzip()
     mLibHandle = NULL;
     pthread_mutex_destroy(&lock);
 }
+#endif
 
 encExtradata::encExtradata(class omx_venc *venc_handle)
 {
@@ -6636,7 +6661,9 @@ encExtradata::encExtradata(class omx_venc *venc_handle)
     mVencHandle = venc_handle;
     mDbgEtbCount = 0;
     pthread_mutex_init(&lock, NULL);
+#ifdef USE_VQZIP
     vqzip_sei_found = false;
+#endif
 }
 
 encExtradata::~encExtradata()

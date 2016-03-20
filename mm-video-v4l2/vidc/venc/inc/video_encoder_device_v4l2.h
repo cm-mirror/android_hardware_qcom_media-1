@@ -34,7 +34,9 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "OMX_VideoExt.h"
 #include "OMX_QCOMExtns.h"
 #include "qc_omx_component.h"
+#ifdef USE_VQZIP
 #include "VQZip.h"
+#endif
 #include "omx_video_common.h"
 #include "omx_video_base.h"
 #include "omx_video_encoder.h"
@@ -210,9 +212,11 @@ struct msm_venc_vui_timing_info {
     unsigned int enabled;
 };
 
+#ifdef USE_VQZIP
 struct msm_venc_vqzip_sei_info {
     unsigned int enabled;
 };
+#endif
 
 struct msm_venc_peak_bitrate {
     unsigned int peakbitrate;
@@ -282,7 +286,9 @@ public:
     void setCookieForConfig(void *cookie);
     ssize_t getBufferSize();
     unsigned int getBufferCount();
+#ifdef USE_VQZIP
     bool vqzip_sei_found;
+#endif
 };
 
 struct statistics {
@@ -342,7 +348,9 @@ class venc_dev
                         OMX_U32 height);
         bool venc_get_performance_level(OMX_U32 *perflevel);
         bool venc_get_vui_timing_info(OMX_U32 *enabled);
+#ifdef USE_VQZIP
         bool venc_get_vqzip_sei_info(OMX_U32 *enabled);
+#endif
         bool venc_get_peak_bitrate(OMX_U32 *peakbitrate);
         bool venc_get_batch_size(OMX_U32 *size);
         bool venc_get_output_log_flag();
@@ -354,6 +362,7 @@ class venc_dev
         bool venc_set_bitrate_type(OMX_U32 type);
         int venc_roiqp_log_buffers(OMX_QTI_VIDEO_CONFIG_ROIINFO *roiInfo);
 
+#ifdef USE_VQZIP
         class venc_dev_vqzip
         {
             public:
@@ -376,6 +385,7 @@ class venc_dev
                 vqzip_compute_stats_t mVQZIPComputeStats;
         };
         venc_dev_vqzip vqzip;
+#endif
         struct venc_debug_cap m_debug;
         OMX_U32 m_nDriver_fd;
         int m_poll_efd;
@@ -443,7 +453,9 @@ class venc_dev
         struct msm_venc_hierlayers          hier_layers;
         struct msm_venc_perf_level          performance_level;
         struct msm_venc_vui_timing_info     vui_timing_info;
+#ifdef USE_VQZIP
         struct msm_venc_vqzip_sei_info      vqzip_sei_info;
+#endif
         struct msm_venc_peak_bitrate        peak_bitrate;
         struct msm_venc_ltrinfo             ltrinfo;
         struct msm_venc_vpx_error_resilience vpx_err_resilience;
@@ -489,11 +501,15 @@ class venc_dev
         bool venc_set_vpx_error_resilience(OMX_BOOL enable);
         bool venc_set_perf_mode(OMX_U32 mode);
         bool venc_set_mbi_statistics_mode(OMX_U32 mode);
+#ifdef USE_VQZIP
         bool venc_set_vqzip_sei_type(OMX_BOOL enable);
+#endif
         bool venc_set_hybrid_hierp(QOMX_EXTNINDEX_VIDEO_HYBRID_HP_MODE* hhp);
         bool venc_set_batch_size(OMX_U32 size);
         bool venc_calibrate_gop();
+#ifdef USE_VQZIP
         bool venc_set_vqzip_defaults();
+#endif
         bool venc_validate_hybridhp_params(OMX_U32 layers, OMX_U32 bFrames, OMX_U32 count, int mode);
         bool venc_set_max_hierp(OMX_U32 hierp_layers);
         bool venc_set_baselayerid(OMX_U32 baseid);
