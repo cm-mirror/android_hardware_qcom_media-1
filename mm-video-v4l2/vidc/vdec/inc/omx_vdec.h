@@ -196,6 +196,7 @@ class VideoHeap : public MemoryHeapBase
 #ifdef USE_VQZIP
 #define OMX_VQZIPSEI_EXTRADATA  0x02000000
 #endif
+#define OMX_OUTPUTCROP_EXTRADATA 0x04000000
 
 #define OMX_INTERLACE_EXTRADATA_SIZE ((sizeof(OMX_OTHER_EXTRADATATYPE) +\
             sizeof(OMX_STREAMINTERLACEFORMAT) + 3)&(~3))
@@ -316,6 +317,13 @@ struct dynamic_buf_list {
     OMX_U32 ref_count;
     void *buffaddr;
     long mapped_size;
+};
+
+struct extradata_info {
+    OMX_BOOL output_crop_updated;
+    OMX_CONFIG_RECTTYPE output_crop_rect;
+    OMX_U32 output_width;
+    OMX_U32 output_height;
 };
 
 // OMX video decoder class
@@ -458,12 +466,16 @@ class omx_vdec: public qc_omx_component
         bool is_component_secure();
         void buf_ref_add(int nPortIndex);
         void buf_ref_remove();
+        void handle_extradata(OMX_BUFFERHEADERTYPE *p_buf_hdr);
+        OMX_BUFFERHEADERTYPE* get_omx_output_buffer_header(int index);
         OMX_ERRORTYPE set_dpb(bool is_split_mode, int dpb_color_format);
         OMX_ERRORTYPE decide_dpb_buffer_mode(bool force_split_mode);
         void request_perf_level(enum vidc_perf_level perf_level);
         int dpb_bit_depth;
         bool async_thread_force_stop;
         volatile bool message_thread_stop;
+        struct extradata_info m_extradata_info;
+        int m_progressive;
 
     private:
         // Bit Positions
@@ -661,7 +673,6 @@ class omx_vdec: public qc_omx_component
         void adjust_timestamp(OMX_S64 &act_timestamp);
         void set_frame_rate(OMX_S64 act_timestamp);
         void handle_extradata_secure(OMX_BUFFERHEADERTYPE *p_buf_hdr);
-        void handle_extradata(OMX_BUFFERHEADERTYPE *p_buf_hdr);
         void print_debug_extradata(OMX_OTHER_EXTRADATATYPE *extra);
 #ifdef _MSM8974_
         void append_interlace_extradata(OMX_OTHER_EXTRADATATYPE *extra,
@@ -791,6 +802,7 @@ class omx_vdec: public qc_omx_component
         //*************************************************************
         pthread_mutex_t       m_lock;
         pthread_mutex_t       c_lock;
+        pthread_mutex_t       buf_lock;
         //sem to handle the minimum procesing of commands
         sem_t                 m_cmd_lock;
         sem_t                 m_safe_flush;
@@ -983,17 +995,20 @@ class omx_vdec: public qc_omx_component
 
         bool m_input_pass_buffer_fd;
 
+        OMX_U32 operating_frame_rate;
+        bool high_fps;
+
         OMX_U32 m_smoothstreaming_width;
         OMX_U32 m_smoothstreaming_height;
         OMX_ERRORTYPE enable_smoothstreaming();
         OMX_ERRORTYPE enable_adaptive_playback(unsigned long width, unsigned long height);
         bool is_thulium_v1;
-        bool m_disable_ubwc_mode;
         OMX_U32 m_downscalar_width;
         OMX_U32 m_downscalar_height;
         int decide_downscalar();
         int enable_downscalar();
         int disable_downscalar();
+        static bool m_disable_ubwc_mode;
 
         unsigned int m_fill_output_msg;
         bool client_set_fps;
@@ -1136,12 +1151,12 @@ class omx_vdec: public qc_omx_component
             //for surface mode (normal playback), advertise native/accelerated formats first
             OMX_COLOR_FORMATTYPE format = (OMX_COLOR_FORMATTYPE)QOMX_COLOR_FORMATYUV420PackedSemiPlanar32m;
 
-            if (!m_disable_ubwc_mode) {
+            if (!omx_vdec::m_disable_ubwc_mode) {
                 OMX_COLOR_FORMATTYPE formatsDefault[] = {
                     [0] = (OMX_COLOR_FORMATTYPE)QOMX_COLOR_FORMATYUV420PackedSemiPlanar32mCompressed,
                     [1] = (OMX_COLOR_FORMATTYPE)QOMX_COLOR_FORMATYUV420PackedSemiPlanar32m,
-                    [2] = OMX_COLOR_FormatYUV420SemiPlanar,
-                    [3] = OMX_COLOR_FormatYUV420Planar,
+                    [2] = OMX_COLOR_FormatYUV420Planar,
+                    [3] = OMX_COLOR_FormatYUV420SemiPlanar,
                     [4] = (OMX_COLOR_FORMATTYPE)QOMX_COLOR_FORMATYUV420PackedSemiPlanar32mMultiView,
                 };
                 format = (index < sizeof(formatsDefault) / sizeof(OMX_COLOR_FORMATTYPE)) ?
@@ -1149,8 +1164,8 @@ class omx_vdec: public qc_omx_component
             } else {
                 OMX_COLOR_FORMATTYPE formatsDefault[] = {
                     [0] = (OMX_COLOR_FORMATTYPE)QOMX_COLOR_FORMATYUV420PackedSemiPlanar32m,
-                    [1] = OMX_COLOR_FormatYUV420SemiPlanar,
-                    [2] = OMX_COLOR_FormatYUV420Planar,
+                    [1] = OMX_COLOR_FormatYUV420Planar,
+                    [2] = OMX_COLOR_FormatYUV420SemiPlanar,
                     [3] = (OMX_COLOR_FORMATTYPE)QOMX_COLOR_FORMATYUV420PackedSemiPlanar32mMultiView,
                 };
                 format = (index < sizeof(formatsDefault) / sizeof(OMX_COLOR_FORMATTYPE)) ?
@@ -1160,6 +1175,7 @@ class omx_vdec: public qc_omx_component
         }
 
         static OMX_ERRORTYPE describeColorFormat(OMX_PTR params);
+        void prefetchNewBuffers();
 
 };
 
